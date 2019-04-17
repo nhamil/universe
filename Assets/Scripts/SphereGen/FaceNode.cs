@@ -135,18 +135,7 @@ namespace SphereGen
 
             CreateMesh(); 
             Mesh mesh = MeshFilter.sharedMesh; 
-            // Vector3[] verts = new Vector3[4]; 
-            // int[] inds = new int[] { 0, 1, 2, 0, 2, 3 }; 
-
-            // verts[0] = Position - FaceIndex.GetRight() + FaceIndex.GetUp(); 
-            // verts[1] = Position - FaceIndex.GetRight() - FaceIndex.GetUp(); 
-            // verts[2] = Position + FaceIndex.GetRight() - FaceIndex.GetUp(); 
-            // verts[3] = Position + FaceIndex.GetRight() + FaceIndex.GetUp(); 
-
-            // mesh.vertices = verts; 
-            // mesh.triangles = inds; 
-            // mesh.RecalculateNormals(); 
-
+            
             int size = 64; 
 
             IBodyGenerator worldGen = new PlanetGenerator(); 

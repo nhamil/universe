@@ -70,7 +70,7 @@ public class PlanetGenerator : IBodyGenerator
 
     public float GetHeight(Vector3 position, int lod) 
     {
-        return 1 + MathUtil.Clamp(0, 1, 0.2f * Fractal(position, lod)); 
+        return 1 + MathUtil.Clamp(0, 1, 0.1f * Fractal(position, lod)); 
     }
 }
 
