@@ -5,20 +5,21 @@ using SphereGen;
 
 public class PlanetGen : MonoBehaviour 
 {
-
+	private IBodyGenerator worldGen; 
 	private FaceNode[] nodes; 
 
 	// Use this for initialization
 	void Start () 
 	{
+		worldGen = new PlanetGenerator(); 
 		float radius = 1f; 
 		nodes = new FaceNode[6]; 
-		nodes[0] = new FaceNode(Vector3.back, FaceIndex.Back, radius); 
-		nodes[1] = new FaceNode(Vector3.forward, FaceIndex.Forward, radius); 
-		nodes[2] = new FaceNode(Vector3.left, FaceIndex.Left, radius); 
-		nodes[3] = new FaceNode(Vector3.right, FaceIndex.Right, radius); 
-		nodes[4] = new FaceNode(Vector3.up, FaceIndex.Up, radius); 
-		nodes[5] = new FaceNode(Vector3.down, FaceIndex.Down, radius); 
+		nodes[0] = new FaceNode(Vector3.back, FaceIndex.Back, radius, gameObject, worldGen); 
+		nodes[1] = new FaceNode(Vector3.forward, FaceIndex.Forward, radius, gameObject, worldGen); 
+		nodes[2] = new FaceNode(Vector3.left, FaceIndex.Left, radius, gameObject, worldGen); 
+		nodes[3] = new FaceNode(Vector3.right, FaceIndex.Right, radius, gameObject, worldGen); 
+		nodes[4] = new FaceNode(Vector3.up, FaceIndex.Up, radius, gameObject, worldGen); 
+		nodes[5] = new FaceNode(Vector3.down, FaceIndex.Down, radius, gameObject, worldGen); 
 	}
 	
 	// Update is called once per frame
@@ -30,5 +31,10 @@ public class PlanetGen : MonoBehaviour
 		{
 			node.Update(UserInfo.Position); 
 		}
+	}
+
+	void OnDestroy() 
+	{
+		MeshQueue.Quit(); 
 	}
 }

@@ -7,7 +7,7 @@ namespace SphereGen
     public class FaceNode //: IQuadtree 
     {
         private FaceNode[] children; 
-        private bool meshEnabled = false; 
+        // private bool meshEnabled = false; 
 
         ////////////////////////////////////////////////////////
 
@@ -17,22 +17,38 @@ namespace SphereGen
 
         public int Lod { get; private set; } 
 
+        public int MaxLod { get { return WorldGen.IsPlanet ? 8 : 4; } }
+
         public Vector3 Position { get; private set; } 
+
+        public Vector3 WorldPosition { get; private set; } 
 
         public float Radius { get; private set; } 
 
+        public GameObject GameObject { get; private set; } 
+
+        public GameObject ParentGameObject { get; private set; } 
+
+        public MeshRenderer MeshRenderer { get; private set; } 
+
         public MeshFilter MeshFilter { get; private set; } 
 
-        public bool MeshEnabled 
-        { 
-            get { return meshEnabled; } 
-            private set 
-            {
-                if (value == meshEnabled) return; 
-                meshEnabled = value; 
-                if (MeshFilter != null) MeshFilter.gameObject.GetComponent<MeshRenderer>().enabled = meshEnabled; 
-            } 
-        } 
+        public bool HasUpdatedMesh { get; private set; } 
+
+        public IBodyGenerator WorldGen { get; private set; } 
+
+        private bool IsDestroyed { get; set; }
+
+        // public bool MeshEnabled 
+        // { 
+        //     get { return meshEnabled; } 
+        //     private set 
+        //     {
+        //         if (value == meshEnabled) return; 
+        //         meshEnabled = value; 
+        //         if (MeshFilter != null) MeshFilter.gameObject.GetComponent<MeshRenderer>().enabled = meshEnabled; 
+        //     } 
+        // } 
 
         ////////////////////////////////////////////////////////
 
@@ -41,18 +57,24 @@ namespace SphereGen
         ////////////////////////////////////////////////////////
 
         private static Material material;
+        private static Material starMaterial; 
 
-        public FaceNode(Vector3 pos, FaceIndex index, float radius) 
+        public FaceNode(Vector3 pos, FaceIndex index, float radius, GameObject parentGameObject, IBodyGenerator worldGen) 
         {
             if (material == null) 
             {
                 material = Resources.Load("Materials/PlanetBaseMaterial") as Material; 
+                starMaterial = Resources.Load("Materials/StarBaseMaterial") as Material; 
             }
+            ParentGameObject = parentGameObject; 
+            WorldGen = worldGen; 
             Parent = null; 
             Lod = 0; 
             Position = pos; 
             FaceIndex = index; 
             Radius = radius; 
+            HasUpdatedMesh = false; 
+            CreateGameObject(); 
             // GenerateMesh(); 
             MeshQueue.RequestMeshGeneration(this); 
         }
@@ -60,43 +82,52 @@ namespace SphereGen
         private FaceNode(FaceNode parent, Vector3 pos) 
         {
             Parent = parent; 
+            ParentGameObject = parent.ParentGameObject; 
+            WorldGen = parent.WorldGen; 
             Lod = parent.Lod + 1; 
             Position = pos; 
             FaceIndex = parent.FaceIndex; 
             Radius = parent.Radius * 0.5f; 
+            CreateGameObject(); 
             // GenerateMesh(); 
             MeshQueue.RequestMeshGeneration(this); 
         }
 
+        private void SetMeshRendererEnabled(bool enabled) 
+        {
+            if (IsDestroyed) return; 
+            if (enabled && !MeshRenderer.enabled) 
+            {
+                MeshRenderer.enabled = true; 
+            }
+            else if (!enabled && MeshRenderer.enabled) 
+            {
+                MeshRenderer.enabled = false; 
+            }
+        }
+
         public void Update(Vector3 camPos) 
         {
-            if (Parent != null) 
+            if (IsDestroyed) 
             {
-                if (Parent.MeshEnabled) 
-                {
-                    MeshEnabled = false; 
-                }
-            }
-            else 
-            {
-                MeshEnabled = true; 
+                return; 
             }
 
-            float distance = (Position.normalized - camPos).magnitude; 
-            float shrinkDist = 5 * Radius; 
-            float expandDist = 4 * Radius; 
+            bool shouldRender = false; 
 
-            if (HasChildren) 
+            if (Parent != null) // has parent 
             {
-                bool allChildMeshes = true; 
-                MeshEnabled = true; 
-                foreach (FaceNode node in children) 
-                {
-                    if (node.MeshFilter == null) allChildMeshes = false; 
-                    node.Update(camPos); 
-                }
-                MeshEnabled = !allChildMeshes; 
+                shouldRender = !Parent.MeshRenderer.enabled; 
             }
+            else // is root 
+            {
+                shouldRender = true; 
+            }
+
+            WorldPosition = Position.normalized + GameObject.transform.position; 
+            float distance = (WorldPosition - camPos).magnitude; 
+            float shrinkDist = 20 * Radius; 
+            float expandDist = 12 * Radius; 
 
             if (distance > shrinkDist) 
             {
@@ -105,40 +136,66 @@ namespace SphereGen
                     DestroyChildrenIfNeeded(); 
                 }
             }
-            else if (distance < expandDist) 
+
+            if (HasChildren) 
             {
-                if (MeshFilter != null && !HasChildren && Lod < 8) 
+                bool allChildMeshes = true; 
+                foreach (FaceNode node in children) 
+                {
+                    if (!node.HasUpdatedMesh) 
+                    {
+                        allChildMeshes = false; 
+                        break; 
+                    }
+                }
+                if (shouldRender) shouldRender = !allChildMeshes; // if was going to render, but all children are generated, render them instead 
+            }
+
+            SetMeshRendererEnabled(shouldRender); 
+
+            if (HasChildren) 
+            {
+                foreach (FaceNode node in children) 
+                {
+                    node.Update(camPos); 
+                }
+            }
+
+            if (distance < expandDist) 
+            {
+                if (MeshFilter != null && !HasChildren && Lod < MaxLod) 
                 {
                     CreateChildren(); 
                 }
             }
         }
 
-        private void CreateMesh() 
+        private void CreateGameObject() 
         {
-            GameObject go = new GameObject(); 
-            if (Parent != null) 
+            GameObject = new GameObject(); 
+            if (ParentGameObject != null) 
             {
-                go.transform.parent = Parent.MeshFilter.transform; 
-                go.transform.position = Vector3.zero; 
-                go.transform.rotation = Quaternion.identity; 
+                GameObject.transform.parent = ParentGameObject.transform; 
+                GameObject.transform.localPosition = Vector3.zero; 
+                GameObject.transform.localRotation = Quaternion.identity; 
             }
-            go.AddComponent<MeshRenderer>().sharedMaterial = material;
-			MeshFilter = go.AddComponent<MeshFilter>(); 
-            MeshEnabled = false; 
+            MeshRenderer = GameObject.AddComponent<MeshRenderer>(); 
+            MeshRenderer.sharedMaterial = WorldGen.IsPlanet ? material : starMaterial;
+			MeshFilter = GameObject.AddComponent<MeshFilter>(); 
             MeshFilter.sharedMesh = new Mesh(); 
         }
 
-        public void GenerateMesh() 
+        public void UpdateMeshData(MeshData meshData) 
         {
-            if (MeshFilter != null) throw new System.Exception("Mesh is already generated, cannot generate mesh");  
-
-            CreateMesh(); 
+            if (IsDestroyed) return; 
+            HasUpdatedMesh = true; 
             Mesh mesh = MeshFilter.sharedMesh; 
-            
-            int size = 64; 
+            meshData.BuildMesh(mesh); 
+        }
 
-            IBodyGenerator worldGen = new PlanetGenerator(); 
+        public void GenerateMesh(MeshData mesh) 
+        {
+            int size = 64; 
 
             Vector3 position = Position; 
             Vector3 up = FaceIndex.GetUp() * Radius; 
@@ -156,17 +213,20 @@ namespace SphereGen
                 {
                     float xAmt = (float) x / (size - 1) * 2 - 1; 
                     Vector3 pos = (position + xAmt * right + yAmt * up).normalized; 
-                    float height = worldGen.GetHeight(pos, Lod); 
+                    float height = WorldGen.GetHeight(pos, Lod); 
                     pos *= height; 
                     positions[x + y * size] = pos; 
 
-                    if (height > worldGen.BaseHeight) 
+                    if (WorldGen.IsPlanet) 
                     {
-                        colors[x + y * size] = new Color(0.0f, 1.0f, 0.0f); 
-                    }
-                    else 
-                    {
-                        colors[x + y * size] = new Color(0.0f, 0.0f, 1.0f); 
+                        if (height > WorldGen.BaseHeight) 
+                        {
+                            colors[x + y * size] = new Color(0.0f, 1.0f, 0.0f); 
+                        }
+                        else 
+                        {
+                            colors[x + y * size] = new Color(0.0f, 0.0f, 1.0f); 
+                        }
                     }
                 }
             }
@@ -179,10 +239,10 @@ namespace SphereGen
             //         float xAmt = (float) x / (size - 1) * 2 - 1; 
 
             //         Vector3 a = positions[x + y * size]; 
-            //         Vector3 b = x + 1 >= size ? worldGen.GetPosition((position + ((x + 1.0f) / (size - 1) * 2 - 1) * right + yAmt * up).normalized) : positions[(x + 1) + y * size]; 
-            //         Vector3 c = y + 1 >= size ? worldGen.GetPosition((position + xAmt * right + ((y + 1.0f) / (size - 1) * 2 - 1) * up).normalized) : positions[x + (y + 1) * size]; 
-            //         Vector3 d = x - 1 < 0 ? worldGen.GetPosition((position + ((x - 1.0f) / (size - 1) * 2 - 1) * right + yAmt * up).normalized) : positions[(x - 1) + y * size]; 
-            //         Vector3 e = y - 1 < 0 ? worldGen.GetPosition((position + xAmt * right + ((y - 1.0f) / (size - 1) * 2 - 1) * up).normalized) : positions[x + (y - 1) * size]; 
+            //         Vector3 b = x + 1 >= size ? WorldGen.GetPosition((position + ((x + 1.0f) / (size - 1) * 2 - 1) * right + yAmt * up).normalized) : positions[(x + 1) + y * size]; 
+            //         Vector3 c = y + 1 >= size ? WorldGen.GetPosition((position + xAmt * right + ((y + 1.0f) / (size - 1) * 2 - 1) * up).normalized) : positions[x + (y + 1) * size]; 
+            //         Vector3 d = x - 1 < 0 ? WorldGen.GetPosition((position + ((x - 1.0f) / (size - 1) * 2 - 1) * right + yAmt * up).normalized) : positions[(x - 1) + y * size]; 
+            //         Vector3 e = y - 1 < 0 ? WorldGen.GetPosition((position + xAmt * right + ((y - 1.0f) / (size - 1) * 2 - 1) * up).normalized) : positions[x + (y - 1) * size]; 
 
             //         int ind = x + y * size; 
             //         normals[ind] = Vector3.Cross((b - a).normalized, (c - a).normalized); 
@@ -208,20 +268,18 @@ namespace SphereGen
                 }
             }
 
-            mesh.Clear(); 
-            mesh.vertices = positions; 
-            mesh.colors = colors; 
-            // mesh.normals = normals; 
-            mesh.triangles = indices; 
-            mesh.RecalculateNormals(); 
-
-            MeshEnabled = false; 
+            mesh.Vertices = positions; 
+            if (WorldGen.IsPlanet) mesh.Colors = colors; 
+            // mesh.Normals = normals; 
+            mesh.Triangles = indices; 
         }
 
         private void DestroySelf() 
         {
-            if (MeshFilter != null) UnityEngine.Object.Destroy(MeshFilter.gameObject); 
-            MeshFilter = null; 
+            if (GameObject != null) UnityEngine.Object.Destroy(GameObject); 
+            GameObject = null; 
+            IsDestroyed = true; 
+            HasUpdatedMesh = false; 
             DestroyChildrenIfNeeded(); 
             // TODO destroy 
         }
@@ -235,7 +293,6 @@ namespace SphereGen
                     node.DestroySelf(); 
                 }
                 children = null; 
-                MeshEnabled = true; 
             }
         }
 

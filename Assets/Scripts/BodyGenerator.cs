@@ -1,5 +1,7 @@
+using System; 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics; 
 using UnityEngine;
 
 public interface IBodyGenerator 
@@ -37,16 +39,28 @@ public class DefaultGenerator : IBodyGenerator
 public class PlanetGenerator : IBodyGenerator  
 {
     private static Material material; 
-
+    
     public Material Material { get{ return material; } } 
 
     public float BaseHeight { get { return 1.0f; } } 
 
     public bool IsPlanet { get { return true; } } 
 
+    public ulong Seed { get; private set; } 
+
     public PlanetGenerator() 
     {
         if (material == null) material = Resources.Load("Materials/PlanetBaseMaterial") as Material; 
+        Seed = (ulong) NanoTime(); 
+    }
+
+    // https://stackoverflow.com/questions/1551742/what-is-the-equivalent-to-system-nanotime-in-net
+    private static long NanoTime() 
+    {
+        long nano = 10000L * Stopwatch.GetTimestamp();
+        nano /= TimeSpan.TicksPerMillisecond;
+        nano *= 100L;
+        return nano;
     }
 
     private float Fractal(Vector3 pos, int lod) 
@@ -56,10 +70,10 @@ public class PlanetGenerator : IBodyGenerator
         float sum = 0.0f; 
         float total = 0.0f; 
 
-        for (uint i = 0; i < 4 + lod * 2; i++) 
+        for (uint i = 0; i < 3 + lod * 1.5; i++) 
         {
             total += amp; 
-            sum += amp * (float) Noise.GetNoise3D(pos.x * freq, pos.y * freq, pos.z * freq, i + 10); 
+            sum += amp * ((float) Noise.GetNoise3D(pos.x * freq, pos.y * freq, pos.z * freq, Seed + i + 10)); 
 
             freq *= 2; 
             amp *= 0.55f; 

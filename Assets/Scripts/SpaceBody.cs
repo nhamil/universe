@@ -1,47 +1,42 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using SphereGen; 
 
 public class SpaceBody : MonoBehaviour {
 
 	public IBodyGenerator WorldGen; 
 
-	private MeshFilter[] meshFilters; 
-	private SpaceBodyFace[] faces; 
+	private FaceNode[] nodes; 
 
-	void Start() 
+	// Use this for initialization
+	void Start () 
 	{
-		Vector3[] directions = 
+		if (WorldGen == null) WorldGen = new PlanetGenerator(); 
+		float radius = 1f; 
+		nodes = new FaceNode[6]; 
+		nodes[0] = new FaceNode(Vector3.back, FaceIndex.Back, radius, gameObject, WorldGen); 
+		nodes[1] = new FaceNode(Vector3.forward, FaceIndex.Forward, radius, gameObject, WorldGen); 
+		nodes[2] = new FaceNode(Vector3.left, FaceIndex.Left, radius, gameObject, WorldGen); 
+		nodes[3] = new FaceNode(Vector3.right, FaceIndex.Right, radius, gameObject, WorldGen); 
+		nodes[4] = new FaceNode(Vector3.up, FaceIndex.Up, radius, gameObject, WorldGen); 
+		nodes[5] = new FaceNode(Vector3.down, FaceIndex.Down, radius, gameObject, WorldGen); 
+	}
+	
+	// Update is called once per frame
+	void Update () 
+	{
+		MeshQueue.Update(); 
+
+		foreach (FaceNode node in nodes) 
 		{
-			Vector3.forward, 
-			Vector3.back, 
-			Vector3.left, 
-			Vector3.right, 
-			Vector3.up, 
-			Vector3.down 
-		};
-
-		faces = new SpaceBodyFace[6]; 
-		meshFilters = new MeshFilter[6]; 
-
-		for (int i = 0; i < 6; i++) 
-		{
-			GameObject go = new GameObject(); 
-			go.transform.parent = transform; 
-			go.transform.localPosition = Vector3.zero; 
-			go.transform.localRotation = Quaternion.identity; 
-			go.AddComponent<MeshRenderer>().sharedMaterial = WorldGen.Material;
-			meshFilters[i] = go.AddComponent<MeshFilter>(); 
-			meshFilters[i].sharedMesh = new Mesh(); 
-
-			faces[i] = new SpaceBodyFace(WorldGen, directions[i], meshFilters[i].sharedMesh); 
-			faces[i].Generate(4); 
+			node.Update(UserInfo.Position); 
 		}
 	}
 
-	void Update() 
+	void OnDestroy() 
 	{
-
+		MeshQueue.Quit(); 
 	}
 
 }
