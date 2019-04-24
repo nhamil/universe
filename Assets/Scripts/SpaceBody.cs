@@ -5,6 +5,8 @@ using SphereGen;
 
 public class SpaceBody : MonoBehaviour {
 
+    private static GameObject AtmospherePrefab; 
+
 	public IBodyGenerator WorldGen; 
 
 	private FaceNode[] nodes; 
@@ -12,6 +14,7 @@ public class SpaceBody : MonoBehaviour {
 	// Use this for initialization
 	void Start () 
 	{
+        if (AtmospherePrefab == null) AtmospherePrefab = Resources.Load("Prefabs/Atmosphere") as GameObject;
 		if (WorldGen == null) WorldGen = new PlanetGenerator(); 
 		float radius = 1f; 
 		nodes = new FaceNode[6]; 
@@ -21,6 +24,18 @@ public class SpaceBody : MonoBehaviour {
 		nodes[3] = new FaceNode(Vector3.right, FaceIndex.Right, radius, gameObject, WorldGen); 
 		nodes[4] = new FaceNode(Vector3.up, FaceIndex.Up, radius, gameObject, WorldGen); 
 		nodes[5] = new FaceNode(Vector3.down, FaceIndex.Down, radius, gameObject, WorldGen); 
+        if (WorldGen.IsPlanet) 
+        {
+            GameObject atmos = Instantiate(AtmospherePrefab, Vector3.zero, Quaternion.identity);
+            atmos.transform.parent = gameObject.transform; 
+            atmos.transform.localPosition = Vector3.zero; 
+            atmos.transform.localRotation = Quaternion.identity; 
+            Material mat = atmos.GetComponent<MeshRenderer>().sharedMaterial; 
+            Color col = ((PlanetGenerator) WorldGen).AtmosColor; 
+            float str = ((PlanetGenerator) WorldGen).AtmosStrength; 
+            mat.SetVector("_Color", new Vector4(col.r, col.g, col.b, 1.0f)); 
+            mat.SetFloat("_Strength", str); 
+        }
 	}
 	
 	// Update is called once per frame

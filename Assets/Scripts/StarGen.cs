@@ -21,12 +21,14 @@ public class StarGen : MonoBehaviour {
         star.GetComponent<SpaceBody>().WorldGen = new StarGenerator(); 
         RenderSettings.sun = star.GetComponent<Light>(); 
 
-        int numPlanets = random.Next(5, 10);
+        int numPlanets = random.Next(10, 13);
         float distance = 45; 
 
         for (int i = 0; i < numPlanets; i++)
         {
-            distance *= (float)random.NextDouble() * (2.8f - 1.4f) + 1.4f; 
+            float min = 1.2f; 
+            float max = 1.5f; 
+            distance *= (float)random.NextDouble() * (max - min) + min; 
 
             GameObject planet = Instantiate(PlanetBase, Vector3.zero, Quaternion.identity);
             //planet.transform.parent = star.transform;

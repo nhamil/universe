@@ -60,22 +60,29 @@ public class PlanetGenerator : IBodyGenerator
     public Color LowLandColor { get; private set; } 
     public Color HighLandColor { get; private set; } 
 
+    public Color AtmosColor { get; private set; } 
+    public float AtmosStrength { get; private set; } 
+
     public PlanetGenerator() 
     {
         if (material == null) material = Resources.Load("Materials/PlanetBaseMaterial") as Material; 
         Seed = (ulong) NanoTime(); 
         System.Random rand = new System.Random((int) Seed); 
-        if (rand.NextDouble() < 0.7) // earth 
+        if (rand.NextDouble() < 0.5) // earth 
         {
-            WaterColor = new Color(0.0f, 0.6f, 0.3f); 
-            LowLandColor = new Color(0.1f, 0.5f, 0.1f); 
+            WaterColor = new Color(0.0f, 0.1f, 0.3f); 
+            LowLandColor = new Color(0.1f, 0.2f, 0.1f); 
             HighLandColor = new Color(0.2f, 0.7f, 0.2f); 
+            AtmosColor = new Color(0.3f, 0.5f, 0.9f); 
+            AtmosStrength = 0.5f; 
         }
         else // alien world 
         {
             WaterColor = new Color((float) rand.NextDouble(), (float) rand.NextDouble(), (float) rand.NextDouble()); 
             LowLandColor = new Color((float) rand.NextDouble(), (float) rand.NextDouble(), (float) rand.NextDouble());
             HighLandColor = new Color((float) rand.NextDouble(), (float) rand.NextDouble(), (float) rand.NextDouble());
+            AtmosColor = new Color((float) rand.NextDouble(), (float) rand.NextDouble(), (float) rand.NextDouble());
+            AtmosStrength = (float) rand.NextDouble(); 
         }
     }
 
@@ -109,7 +116,7 @@ public class PlanetGenerator : IBodyGenerator
 
     public float GetHeight(Vector3 position, int lod) 
     {
-        return 1 + MathUtil.Clamp(0, 1, 0.1f * Fractal(position, lod)); 
+        return 1 + MathUtil.Clamp(0, 1, 0.05f * Fractal(position, lod)); 
     }
 }
 
