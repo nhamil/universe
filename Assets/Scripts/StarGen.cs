@@ -21,7 +21,7 @@ public class StarGen : MonoBehaviour {
         star.GetComponent<SpaceBody>().WorldGen = new StarGenerator(); 
         RenderSettings.sun = star.GetComponent<Light>(); 
 
-        int numPlanets = 4; //random.Next(5, 10);
+        int numPlanets = random.Next(5, 10);
         float distance = 45; 
 
         for (int i = 0; i < numPlanets; i++)

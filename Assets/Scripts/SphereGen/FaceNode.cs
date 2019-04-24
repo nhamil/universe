@@ -221,11 +221,11 @@ namespace SphereGen
                     {
                         if (height > WorldGen.BaseHeight) 
                         {
-                            colors[x + y * size] = new Color(0.0f, 1.0f, 0.0f); 
+                            colors[x + y * size] = WorldGen.LowLandColor; 
                         }
-                        else 
+                        else // is water 
                         {
-                            colors[x + y * size] = new Color(0.0f, 0.0f, 1.0f); 
+                            colors[x + y * size] = WorldGen.WaterColor; 
                         }
                     }
                 }

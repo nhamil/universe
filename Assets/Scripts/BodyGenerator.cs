@@ -12,6 +12,10 @@ public interface IBodyGenerator
 
     bool IsPlanet { get; } 
 
+    Color WaterColor { get; }
+    Color LowLandColor { get; } 
+    Color HighLandColor { get; } 
+
     float GetHeight(Vector3 position, int lod); 
 }
 
@@ -24,6 +28,10 @@ public class DefaultGenerator : IBodyGenerator
     public float BaseHeight { get { return 1.0f; } } 
 
     public bool IsPlanet { get { return false; } } 
+
+    public Color WaterColor { get; private set; }
+    public Color LowLandColor { get; private set; } 
+    public Color HighLandColor { get; private set; } 
 
     public DefaultGenerator() 
     {
@@ -48,10 +56,27 @@ public class PlanetGenerator : IBodyGenerator
 
     public ulong Seed { get; private set; } 
 
+    public Color WaterColor { get; private set; }
+    public Color LowLandColor { get; private set; } 
+    public Color HighLandColor { get; private set; } 
+
     public PlanetGenerator() 
     {
         if (material == null) material = Resources.Load("Materials/PlanetBaseMaterial") as Material; 
         Seed = (ulong) NanoTime(); 
+        System.Random rand = new System.Random((int) Seed); 
+        if (rand.NextDouble() < 0.7) // earth 
+        {
+            WaterColor = new Color(0.0f, 0.6f, 0.3f); 
+            LowLandColor = new Color(0.1f, 0.5f, 0.1f); 
+            HighLandColor = new Color(0.2f, 0.7f, 0.2f); 
+        }
+        else // alien world 
+        {
+            WaterColor = new Color((float) rand.NextDouble(), (float) rand.NextDouble(), (float) rand.NextDouble()); 
+            LowLandColor = new Color((float) rand.NextDouble(), (float) rand.NextDouble(), (float) rand.NextDouble());
+            HighLandColor = new Color((float) rand.NextDouble(), (float) rand.NextDouble(), (float) rand.NextDouble());
+        }
     }
 
     // https://stackoverflow.com/questions/1551742/what-is-the-equivalent-to-system-nanotime-in-net
@@ -90,6 +115,8 @@ public class PlanetGenerator : IBodyGenerator
 
 public class StarGenerator : IBodyGenerator  
 {
+    private static Color StarColor = new Color(1, 1, 0); 
+
     private Material material; 
 
     public Material Material { get{ return material; } } 
@@ -97,6 +124,10 @@ public class StarGenerator : IBodyGenerator
     public float BaseHeight { get { return 10.0f; } } 
 
     public bool IsPlanet { get { return false; } } 
+
+    public Color WaterColor { get { return StarColor; } }
+    public Color LowLandColor { get { return StarColor; } }
+    public Color HighLandColor { get { return StarColor; } }
 
     public StarGenerator() 
     {
