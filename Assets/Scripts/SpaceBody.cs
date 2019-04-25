@@ -30,11 +30,12 @@ public class SpaceBody : MonoBehaviour {
             atmos.transform.parent = gameObject.transform; 
             atmos.transform.localPosition = Vector3.zero; 
             atmos.transform.localRotation = Quaternion.identity; 
-            Material mat = atmos.GetComponent<MeshRenderer>().sharedMaterial; 
+            Material mat = atmos.GetComponent<MeshRenderer>().material; 
             Color col = ((PlanetGenerator) WorldGen).AtmosColor; 
             float str = ((PlanetGenerator) WorldGen).AtmosStrength; 
             mat.SetVector("_Color", new Vector4(col.r, col.g, col.b, 1.0f)); 
             mat.SetFloat("_Strength", str); 
+			mat.SetFloat("_Radius", WorldGen.BaseHeight * 1.055f); 
         }
 	}
 	
@@ -45,6 +46,7 @@ public class SpaceBody : MonoBehaviour {
 
 		foreach (FaceNode node in nodes) 
 		{
+			FaceNode.PreUpdate(); 
 			node.Update(UserInfo.Position); 
 		}
 	}

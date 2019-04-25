@@ -8,13 +8,17 @@ namespace SphereGen
 
     static class MeshQueue 
     {
-        private static List<LodMeshEntry> entries; 
-        private static List<LodMeshEntry> completed; 
+        private static List<LodMeshEntry> entries; // used on both threads
+        private static List<LodMeshEntry> completed; // used on both threads 
         private static List<LodMeshEntry> toCreate; 
 
         private static Thread[] threads;
         private static bool running = true;  
 
+        private static object positionLock = new object(); 
+        private static Vector3 userPosition = Vector3.zero; 
+        private static Vector3 workerUserPosition = Vector3.zero; 
+        
         public class LodMeshEntry : IComparable<LodMeshEntry> 
         {
             public FaceNode Node { get; private set; } 
@@ -33,11 +37,11 @@ namespace SphereGen
                 int lod = Node.Lod - other.Node.Lod; 
                 if (lod != 0) return -lod; 
 
-                float d1 = (Node.WorldPosition - UserInfo.Position).sqrMagnitude; 
-                float d2 = (Node.WorldPosition - UserInfo.Position).sqrMagnitude; 
+                float d1 = (Node.WorldPosition - workerUserPosition).sqrMagnitude; 
+                float d2 = (other.Node.WorldPosition - workerUserPosition).sqrMagnitude; 
                 return (d1 < d2) ? 1 : -1; 
             }
-        }
+        }      
 
         static MeshQueue() 
         {
@@ -57,6 +61,11 @@ namespace SphereGen
         {
             while (running) 
             {
+                lock (positionLock) 
+                {
+                    workerUserPosition = userPosition; 
+                }
+
                 GenerateMesh(); 
                 Thread.Sleep(1); 
             }
@@ -67,6 +76,7 @@ namespace SphereGen
             running = false; 
         }
 
+        // worker thread 
         public static LodMeshEntry RequestMeshGeneration(FaceNode node) 
         {
             LodMeshEntry entry = new LodMeshEntry(node); 
@@ -77,8 +87,44 @@ namespace SphereGen
             return entry; 
         }
 
+        private static void RemoveNodeFromList(FaceNode node, List<LodMeshEntry> list) 
+        {
+            for (int i = 0; i < list.Count; i++) 
+            {
+                if (list[i].Node == node) 
+                {
+                    list.RemoveAt(i); 
+                    return; 
+                }
+            }
+        }
+
+        // main thread 
+        public static void OnDestroy(FaceNode node) 
+        {
+            lock (entries) 
+            {
+                RemoveNodeFromList(node, entries); 
+            }
+
+            lock (completed) 
+            {
+                RemoveNodeFromList(node, completed); 
+            }
+
+            RemoveNodeFromList(node, toCreate); 
+        }
+
+        // main thread 
         public static void Update() 
         {
+            FaceNode.PreUpdate(); 
+
+            lock (positionLock) 
+            {
+                userPosition = UserInfo.Position; 
+            }
+
             lock (completed) 
             {
                 for (int i = 0; i < completed.Count; i++) 
@@ -96,6 +142,7 @@ namespace SphereGen
             entry.Node.UpdateMeshData(entry.MeshData); 
         }
 
+        // worker thread 
         private static void GenerateMesh() 
         {
             LodMeshEntry entry; 

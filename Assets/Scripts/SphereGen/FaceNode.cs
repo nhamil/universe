@@ -6,6 +6,8 @@ namespace SphereGen
 
     public class FaceNode //: IQuadtree 
     {
+        private static bool createdChildrenThisFrame = false; 
+
         private FaceNode[] children; 
         // private bool meshEnabled = false; 
 
@@ -17,7 +19,7 @@ namespace SphereGen
 
         public int Lod { get; private set; } 
 
-        public int MaxLod { get { return WorldGen.IsPlanet ? 4 : 2; } }
+        public int MaxLod { get { return WorldGen.IsPlanet ? 6 : 2; } }
 
         public Vector3 Position { get; private set; } 
 
@@ -58,6 +60,11 @@ namespace SphereGen
 
         private static Material material;
         private static Material starMaterial; 
+
+        public static void PreUpdate() 
+        {
+            createdChildrenThisFrame = false; 
+        }
 
         public FaceNode(Vector3 pos, FaceIndex index, float radius, GameObject parentGameObject, IBodyGenerator worldGen) 
         {
@@ -126,8 +133,8 @@ namespace SphereGen
 
             WorldPosition = Position.normalized + GameObject.transform.position; 
             float distance = (WorldPosition - camPos).magnitude; 
-            float shrinkDist = 20 * Radius; 
-            float expandDist = 12 * Radius; 
+            float shrinkDist = 30 * Radius; 
+            float expandDist = 30 * Radius; 
 
             if (distance > shrinkDist) 
             {
@@ -153,19 +160,23 @@ namespace SphereGen
 
             SetMeshRendererEnabled(shouldRender); 
 
+            if (distance < expandDist) 
+            {
+                if (MeshFilter != null && !HasChildren && Lod < MaxLod) 
+                {
+                    if (!createdChildrenThisFrame) 
+                    {
+                        CreateChildren(); 
+                        createdChildrenThisFrame = true; 
+                    }
+                }
+            }
+
             if (HasChildren) 
             {
                 foreach (FaceNode node in children) 
                 {
                     node.Update(camPos); 
-                }
-            }
-
-            if (distance < expandDist) 
-            {
-                if (MeshFilter != null && !HasChildren && Lod < MaxLod) 
-                {
-                    CreateChildren(); 
                 }
             }
         }
@@ -277,6 +288,7 @@ namespace SphereGen
         private void DestroySelf() 
         {
             if (GameObject != null) UnityEngine.Object.Destroy(GameObject); 
+            MeshQueue.OnDestroy(this); 
             GameObject = null; 
             IsDestroyed = true; 
             HasUpdatedMesh = false; 

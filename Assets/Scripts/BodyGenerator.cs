@@ -50,7 +50,11 @@ public class PlanetGenerator : IBodyGenerator
     
     public Material Material { get{ return material; } } 
 
-    public float BaseHeight { get { return 1.0f; } } 
+    public float BaseHeight { get; private set; } 
+    public float WaterBias { get; private set; } 
+
+    public float BaseFreq { get; private set; } 
+    public float Persistance { get; private set; } 
 
     public bool IsPlanet { get { return true; } } 
 
@@ -68,22 +72,42 @@ public class PlanetGenerator : IBodyGenerator
         if (material == null) material = Resources.Load("Materials/PlanetBaseMaterial") as Material; 
         Seed = (ulong) NanoTime(); 
         System.Random rand = new System.Random((int) Seed); 
+        BaseHeight = (float) (rand.NextDouble() * 0.5 + 0.75); 
+        WaterBias = (float) (rand.NextDouble() * 0.04 - 0.02); 
+        BaseFreq = (float) (rand.NextDouble() * 1.0 + 0.5); 
+        Persistance = (float) (rand.NextDouble() * 0.2 + 0.5); 
         if (rand.NextDouble() < 0.5) // earth 
         {
-            WaterColor = new Color(0.0f, 0.1f, 0.3f); 
-            LowLandColor = new Color(0.1f, 0.2f, 0.1f); 
+            WaterColor = new Color(0.0f, 0.1f, 0.5f); 
+            LowLandColor = new Color(0.1f, 0.5f, 0.1f); 
             HighLandColor = new Color(0.2f, 0.7f, 0.2f); 
-            AtmosColor = new Color(0.3f, 0.5f, 0.9f); 
-            AtmosStrength = 0.5f; 
+            AtmosColor = new Color(0.2f, 0.3f, 1.0f); 
+            AtmosStrength = 1f; 
         }
         else // alien world 
         {
-            WaterColor = new Color((float) rand.NextDouble(), (float) rand.NextDouble(), (float) rand.NextDouble()); 
-            LowLandColor = new Color((float) rand.NextDouble(), (float) rand.NextDouble(), (float) rand.NextDouble());
-            HighLandColor = new Color((float) rand.NextDouble(), (float) rand.NextDouble(), (float) rand.NextDouble());
-            AtmosColor = new Color((float) rand.NextDouble(), (float) rand.NextDouble(), (float) rand.NextDouble());
-            AtmosStrength = (float) rand.NextDouble(); 
+            WaterColor = StrongColor(rand); 
+            LowLandColor = StrongColor(rand); 
+            HighLandColor = StrongColor(rand); 
+            AtmosColor = StrongColor(rand); 
+            AtmosStrength = (float) (rand.NextDouble() * 1.5); 
         }
+        // else // alien world 
+        // {
+        //     WaterColor = new Color((float) rand.NextDouble(), (float) rand.NextDouble(), (float) rand.NextDouble()); 
+        //     LowLandColor = new Color((float) rand.NextDouble(), (float) rand.NextDouble(), (float) rand.NextDouble());
+        //     HighLandColor = new Color((float) rand.NextDouble(), (float) rand.NextDouble(), (float) rand.NextDouble());
+        //     AtmosColor = new Color((float) rand.NextDouble(), (float) rand.NextDouble(), (float) rand.NextDouble());
+        //     AtmosStrength = (float) rand.NextDouble(); 
+        // }
+    }
+
+    private static Color StrongColor(System.Random rand) 
+    {
+        Vector3 v = new Vector3((float) rand.NextDouble(), (float) rand.NextDouble(), (float) rand.NextDouble()); 
+        v = v.normalized; 
+        v *= (float) (rand.NextDouble() * 0.3 + 0.7); 
+        return new Color(v.x, v.y, v.z); 
     }
 
     // https://stackoverflow.com/questions/1551742/what-is-the-equivalent-to-system-nanotime-in-net
@@ -105,10 +129,10 @@ public class PlanetGenerator : IBodyGenerator
         for (uint i = 0; i < 3 + lod * 1.5; i++) 
         {
             total += amp; 
-            sum += amp * ((float) Noise.GetNoise3D(pos.x * freq, pos.y * freq, pos.z * freq, Seed + i + 10)); 
+            sum += amp * ((float) Noise.GetNoise3D(pos.x * freq * BaseFreq, pos.y * freq * BaseFreq, pos.z * freq * BaseFreq, Seed + i + 10)); 
 
             freq *= 2; 
-            amp *= 0.55f; 
+            amp *= Persistance; 
         }
 
         return sum / total; 
@@ -116,7 +140,7 @@ public class PlanetGenerator : IBodyGenerator
 
     public float GetHeight(Vector3 position, int lod) 
     {
-        return 1 + MathUtil.Clamp(0, 1, 0.05f * Fractal(position, lod)); 
+        return BaseHeight + MathUtil.Clamp(0, 1, 0.03f * Fractal(position, lod) + WaterBias); 
     }
 }
 

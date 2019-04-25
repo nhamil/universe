@@ -4,7 +4,7 @@ Shader "AtmosShader" {
     Properties
     {
         _SunPosition ("Sun Position", Vector) = (0, 0, 0)
-        _Radius ("Radius", Float) = 1.5 
+        _Radius ("Radius", Float) = 1.06 
         _Strength ("Strength", Float) = 1.0 
         _Color ("Color", Vector) = (0.3, 0.5, 0.9)
     }
@@ -23,6 +23,7 @@ Shader "AtmosShader" {
             float3 _SunPosition; 
             float _Radius; 
             float _Strength; 
+            float3 _Color; 
 
             #pragma vertex vert
             #pragma fragment frag
@@ -46,7 +47,7 @@ Shader "AtmosShader" {
             V2F vert (AppData v)
             {
                 V2F o;
-                o.Position = UnityObjectToClipPos(v.Position * _Radius);
+                o.Position = UnityObjectToClipPos(float4(v.Position.xyz * _Radius, 1));
                 o.ModelViewPos = mul(UNITY_MATRIX_MV, float4(v.Position.xyz * _Radius, 1)).xyz;
                 // o.ViewDir = normalize(UnityWorldSpaceViewDir(o.WorldPos)); 
                 o.Normal = normalize(mul(UNITY_MATRIX_IT_MV, v.Position).xyz); 
@@ -60,29 +61,22 @@ Shader "AtmosShader" {
                 float3 lightDir = normalize(i.ModelViewPos - lightPos); 
 
                 float diffuse = saturate(dot(-lightDir, normal) + 0.2); 
-                // float3 viewDir = -normalize(mul(unity_ObjectToWorld, float4(0, 0, 0, 1)).xyz - _WorldSpaceCameraPos); 
                 float3 viewDir = -normalize(i.ModelViewPos); 
-                float3 twilight = float3(0.2, 0.1, 0.0); 
-                float3 mainColor = float3(0.3, 0.5, 0.9); 
-                float colorLerp = saturate(saturate(dot(-lightDir, normal) + 0.2) - saturate(dot(-lightDir, normal) - 0.999)); 
+                float3 twilight = float3(0.9, 0.8, 0.0); 
+                float3 mainColor = _Color; //float3(0.3, 0.5, 0.9); 
+                float colorLerp = saturate(saturate(dot(-lightDir, normal) + 0.6) - saturate(dot(-lightDir, normal) - 0.999)); 
                 float3 color = lerp(twilight, mainColor, colorLerp); 
 
                 float viewDotNormal = saturate(dot(viewDir, normal)); 
 
-                float angleKeep = (1 - pow(viewDotNormal - 0.2, 1)) * 1;////pow(0.1 + saturate(1 - dot(i.ViewDir, i.Normal)), 1) * 2+ 0.1; 
+                float angleKeep = (1 - pow(viewDotNormal - 0.2, 1)) * 1;
                 float edge = 1; 
                 float limit = 0.3; 
                 if (viewDotNormal < limit) 
                 {
                     edge = pow(viewDotNormal / limit, 2); 
                 }
-                // float alpha = saturate(1 * 1 * 1);
-                // color = viewDir * 0.5 + 0.5; 
-                // color *= diffuse; 
-                // color = ; 
                 float alpha = _Strength * diffuse * edge * angleKeep; 
-                // - pow(1 - diffuse * min(edge, angleKeep), 1); // dot(lightDir, -viewDir); 
-                //alpha *= dot(viewDir, i.normal); 
 
                 return float4 (color, alpha);
             }
