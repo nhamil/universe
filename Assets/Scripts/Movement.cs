@@ -7,6 +7,8 @@ public class Movement : MonoBehaviour {
     public float Speed = 10.0f;
     public float FastSpeed = 100.0f; 
 
+    private Vector3 velocity = Vector3.zero; 
+
 	// Use this for initialization
 	void Start () {
 		
@@ -52,7 +54,14 @@ public class Movement : MonoBehaviour {
             move *= Speed;
         }
         
-        transform.position += transform.rotation * move * Time.fixedDeltaTime; 
+        velocity += transform.rotation * move * Time.fixedDeltaTime; 
+        
+        if (Input.GetKey(KeyCode.N)) 
+        {
+            velocity = Vector3.zero; 
+        }
+        
+        transform.position += velocity * Time.fixedDeltaTime; 
     }
 
 }

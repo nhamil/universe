@@ -83,7 +83,7 @@ public class PlanetGenerator : IBodyGenerator
         BaseHeight = (float) (rand.NextDouble() * variance + baseHeight - variance/2); 
         WaterBias = (float) (rand.NextDouble() * 0.04 - 0.02); 
         BaseFreq = (float) (rand.NextDouble() * 1.0 + 0.5); 
-        Persistance = (float) (rand.NextDouble() * 0.4 + 0.35); 
+        Persistance = (float) (rand.NextDouble() * 0.3 + 0.45); 
         if (rand.NextDouble() < 0.5) // earth 
         {
             WaterColor = new Color(0.0f, 0.1f, 0.5f); 
