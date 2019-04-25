@@ -11,6 +11,7 @@ public interface IBodyGenerator
     float BaseHeight { get; } 
 
     bool IsPlanet { get; } 
+    bool IsMoon { get; } 
 
     Color WaterColor { get; }
     Color LowLandColor { get; } 
@@ -28,6 +29,7 @@ public class DefaultGenerator : IBodyGenerator
     public float BaseHeight { get { return 1.0f; } } 
 
     public bool IsPlanet { get { return false; } } 
+    public bool IsMoon { get { return false; } } 
 
     public Color WaterColor { get; private set; }
     public Color LowLandColor { get; private set; } 
@@ -55,8 +57,10 @@ public class PlanetGenerator : IBodyGenerator
 
     public float BaseFreq { get; private set; } 
     public float Persistance { get; private set; } 
+    public float HeightMul { get; private set; } 
 
     public bool IsPlanet { get { return true; } } 
+    public bool IsMoon { get; private set; } 
 
     public ulong Seed { get; private set; } 
 
@@ -67,22 +71,26 @@ public class PlanetGenerator : IBodyGenerator
     public Color AtmosColor { get; private set; } 
     public float AtmosStrength { get; private set; } 
 
-    public PlanetGenerator() 
+    public PlanetGenerator(float bh, float v) : this(bh, v, false) {}
+
+    public PlanetGenerator(float baseHeight, float variance, bool moon) 
     {
         if (material == null) material = Resources.Load("Materials/PlanetBaseMaterial") as Material; 
+        IsMoon = moon; 
+        HeightMul = moon ? 0.2f : 1; 
         Seed = (ulong) NanoTime(); 
         System.Random rand = new System.Random((int) Seed); 
-        BaseHeight = (float) (rand.NextDouble() * 0.5 + 0.75); 
+        BaseHeight = (float) (rand.NextDouble() * variance + baseHeight - variance/2); 
         WaterBias = (float) (rand.NextDouble() * 0.04 - 0.02); 
         BaseFreq = (float) (rand.NextDouble() * 1.0 + 0.5); 
-        Persistance = (float) (rand.NextDouble() * 0.2 + 0.5); 
+        Persistance = (float) (rand.NextDouble() * 0.4 + 0.35); 
         if (rand.NextDouble() < 0.5) // earth 
         {
             WaterColor = new Color(0.0f, 0.1f, 0.5f); 
             LowLandColor = new Color(0.1f, 0.5f, 0.1f); 
             HighLandColor = new Color(0.2f, 0.7f, 0.2f); 
             AtmosColor = new Color(0.2f, 0.3f, 1.0f); 
-            AtmosStrength = 1f; 
+            AtmosStrength = 0.5f; 
         }
         else // alien world 
         {
@@ -90,7 +98,14 @@ public class PlanetGenerator : IBodyGenerator
             LowLandColor = StrongColor(rand); 
             HighLandColor = StrongColor(rand); 
             AtmosColor = StrongColor(rand); 
-            AtmosStrength = (float) (rand.NextDouble() * 1.5); 
+            AtmosStrength = (float) (rand.NextDouble() * 1.0); 
+        }
+        if (moon) 
+        {
+            WaterBias += 0.02f;
+            WaterColor = StrongColor(rand); 
+            LowLandColor = StrongColor(rand); 
+            HighLandColor = StrongColor(rand); 
         }
         // else // alien world 
         // {
@@ -140,7 +155,7 @@ public class PlanetGenerator : IBodyGenerator
 
     public float GetHeight(Vector3 position, int lod) 
     {
-        return BaseHeight + MathUtil.Clamp(0, 1, 0.03f * Fractal(position, lod) + WaterBias); 
+        return BaseHeight + MathUtil.Clamp(0, 1, 0.03f * Fractal(position, lod) + WaterBias) * HeightMul; 
     }
 }
 
@@ -155,6 +170,7 @@ public class StarGenerator : IBodyGenerator
     public float BaseHeight { get { return 10.0f; } } 
 
     public bool IsPlanet { get { return false; } } 
+    public bool IsMoon { get { return false; } } 
 
     public Color WaterColor { get { return StarColor; } }
     public Color LowLandColor { get { return StarColor; } }

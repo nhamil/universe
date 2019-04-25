@@ -37,7 +37,30 @@ public class StarGen : MonoBehaviour {
             orbit.Distance = distance; 
             orbit.OffsetAngle = (float)random.NextDouble() * 360.0f;
             // TODO different types of planets 
-            planet.GetComponent<SpaceBody>().WorldGen = new PlanetGenerator(); 
+            planet.GetComponent<SpaceBody>().WorldGen = new PlanetGenerator(1, 0.5f); 
+
+            if (random.NextDouble() < 0.5) 
+            {
+                // moons 
+                int numMoons = random.Next(1, 4); 
+                float moonDist = 6; 
+
+                for (int j = 0; j < numMoons; j++) 
+                {
+                    float mmin = 1.2f; 
+                    float mmax = 1.8f; 
+                    moonDist *= (float)random.NextDouble() * (mmax - mmin) + mmin; 
+
+                    GameObject moon = Instantiate(PlanetBase, Vector3.zero, Quaternion.identity);
+                    //planet.transform.parent = star.transform;
+                    Orbit morbit = moon.GetComponent<Orbit>();
+                    morbit.Orbits = planet;
+                    morbit.Distance = moonDist; 
+                    morbit.OffsetAngle = (float)random.NextDouble() * 360.0f;
+                    // TODO different types of planets 
+                    moon.GetComponent<SpaceBody>().WorldGen = new PlanetGenerator(0.20f, 0.1f, true); 
+                }
+            }
         }
     }
     

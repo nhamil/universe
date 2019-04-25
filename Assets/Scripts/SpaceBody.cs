@@ -15,7 +15,7 @@ public class SpaceBody : MonoBehaviour {
 	void Start () 
 	{
         if (AtmospherePrefab == null) AtmospherePrefab = Resources.Load("Prefabs/Atmosphere") as GameObject;
-		if (WorldGen == null) WorldGen = new PlanetGenerator(); 
+		if (WorldGen == null) WorldGen = new PlanetGenerator(1, 0); 
 		float radius = 1f; 
 		nodes = new FaceNode[6]; 
 		nodes[0] = new FaceNode(Vector3.back, FaceIndex.Back, radius, gameObject, WorldGen); 
@@ -24,7 +24,7 @@ public class SpaceBody : MonoBehaviour {
 		nodes[3] = new FaceNode(Vector3.right, FaceIndex.Right, radius, gameObject, WorldGen); 
 		nodes[4] = new FaceNode(Vector3.up, FaceIndex.Up, radius, gameObject, WorldGen); 
 		nodes[5] = new FaceNode(Vector3.down, FaceIndex.Down, radius, gameObject, WorldGen); 
-        if (WorldGen.IsPlanet) 
+        if (WorldGen.IsPlanet && !WorldGen.IsMoon) 
         {
             GameObject atmos = Instantiate(AtmospherePrefab, Vector3.zero, Quaternion.identity);
             atmos.transform.parent = gameObject.transform; 

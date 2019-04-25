@@ -11,7 +11,7 @@ public class PlanetGen : MonoBehaviour
 	// Use this for initialization
 	void Start () 
 	{
-		worldGen = new PlanetGenerator(); 
+		worldGen = new PlanetGenerator(1, 0); 
 		float radius = 1f; 
 		nodes = new FaceNode[6]; 
 		nodes[0] = new FaceNode(Vector3.back, FaceIndex.Back, radius, gameObject, worldGen); 

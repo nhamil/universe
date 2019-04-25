@@ -19,7 +19,7 @@ namespace SphereGen
 
         public int Lod { get; private set; } 
 
-        public int MaxLod { get { return WorldGen.IsPlanet ? 6 : 2; } }
+        public int MaxLod { get { return WorldGen.IsMoon ? 3 : WorldGen.IsPlanet ? 4 : 2; } }
 
         public Vector3 Position { get; private set; } 
 

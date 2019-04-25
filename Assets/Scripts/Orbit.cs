@@ -13,7 +13,7 @@ public class Orbit : MonoBehaviour {
     
     // Use this for initialization
     void Start () {
-        orbitalPeriod = 2 * Mathf.PI * Mathf.Sqrt(Distance * Distance * Distance / (5000));
+        orbitalPeriod = 2 * Mathf.PI * Mathf.Sqrt(Distance * Distance * Distance / (5000)) * 1000;
 
         SetPosition(); 
 	}
